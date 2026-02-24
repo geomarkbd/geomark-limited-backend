@@ -5,5 +5,8 @@ export interface IEmployee {
   address?: string;
   designation: string;
   picture?: string;
+  facebook?: string;
+  linkedin?: string;
+  twitter?: string;
   joinDate?: Date;
 }
