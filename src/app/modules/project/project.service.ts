@@ -9,14 +9,14 @@ import { projectSearchableFields } from "./project.constant";
 
 const createProject = async (payload: IProject) => {
   const existingProjectName = await Project.findOne({ name: payload.name });
-  const existingProjecttitle = await Project.findOne({ title: payload.title });
+  // const existingProjecttitle = await Project.findOne({ title: payload.title });
 
   if (existingProjectName) {
     throw new AppError(httpStatus.CONFLICT, "Project with this name already exists");
   }
-  if (existingProjecttitle) {
-    throw new AppError(httpStatus.CONFLICT, "Project with this title already exists");
-  }
+  // if (existingProjecttitle) {
+  //   throw new AppError(httpStatus.CONFLICT, "Project with this title already exists");
+  // }
 
   const project = await Project.create(payload);
   return project;

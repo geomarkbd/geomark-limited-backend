@@ -9,6 +9,10 @@ const employeeSchema = new Schema<IEmployee>(
     address: { type: String },
     designation: { type: String, required: true },
     picture: { type: String },
+    facebook: { type: String },
+    linkedin: { type: String },
+    twitter: { type: String },
+
     joinDate: { type: Date },
   },
   {

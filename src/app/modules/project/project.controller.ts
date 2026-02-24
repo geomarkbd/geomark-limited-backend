@@ -22,7 +22,7 @@ const createProject = catchAsync(async (req: Request, res: Response) => {
 
 const updateProject = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  
+
   const payload: IProject = {
     ...req.body,
     picture: req.file?.path,
