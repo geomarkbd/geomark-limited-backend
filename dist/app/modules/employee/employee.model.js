@@ -9,6 +9,9 @@ const employeeSchema = new mongoose_1.Schema({
     address: { type: String },
     designation: { type: String, required: true },
     picture: { type: String },
+    facebook: { type: String },
+    linkedin: { type: String },
+    twitter: { type: String },
     joinDate: { type: Date },
 }, {
     timestamps: true,

@@ -5,6 +5,7 @@ import { ClientRoutes } from "../modules/client/client.route";
 import { EmployeeRoutes } from "../modules/employee/employee.route";
 import { ProjectRoutes } from "../modules/project/project.route";
 import { ServiceRoutes } from "../modules/service/service.route";
+import { ContactRoutes } from "../modules/contact/contact.route";
 
 export const router = Router();
 
@@ -35,14 +36,12 @@ const moduleRoutes = [
     path: "/project",
     route: ProjectRoutes,
   },
+  {
+    path: "/contact",
+    route: ContactRoutes,
+  },
 ];
 
 moduleRoutes.forEach((route) => {
   router.use(route.path, route.route);
 });
-
-// router.use("/user", UserRoutes)
-// router.use("/tour", TourRoutes)
-// router.use("/division", DivisionRoutes)
-// router.use("/booking", BookingRoutes)
-// router.use("/user", UserRoutes)

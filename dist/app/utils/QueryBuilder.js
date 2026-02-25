@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.QueryBuilder = void 0;
-const constants_1 = require("./constants");
+const constants_1 = require("../constants");
 class QueryBuilder {
     constructor(modelQuery, query) {
         this.modelQuery = modelQuery;

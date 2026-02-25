@@ -21,13 +21,13 @@ const cloudinary_config_1 = require("../../config/cloudinary.config");
 const project_constant_1 = require("./project.constant");
 const createProject = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const existingProjectName = yield project_model_1.Project.findOne({ name: payload.name });
-    const existingProjecttitle = yield project_model_1.Project.findOne({ title: payload.title });
+    // const existingProjecttitle = await Project.findOne({ title: payload.title });
     if (existingProjectName) {
         throw new AppError_1.default(http_status_codes_1.default.CONFLICT, "Project with this name already exists");
     }
-    if (existingProjecttitle) {
-        throw new AppError_1.default(http_status_codes_1.default.CONFLICT, "Project with this title already exists");
-    }
+    // if (existingProjecttitle) {
+    //   throw new AppError(httpStatus.CONFLICT, "Project with this title already exists");
+    // }
     const project = yield project_model_1.Project.create(payload);
     return project;
 });
