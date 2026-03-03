@@ -58,17 +58,29 @@ const updateProject = async (id: string, payload: Partial<IProject>) => {
   return updatedProject;
 };
 
+// const getAllProjects = async (query: Record<string, string>) => {
+//   const queryBuilder = new QueryBuilder(Project.find().populate("client"), query);
+
+//   const projects = await queryBuilder.search(projectSearchableFields).filter().sort().fields().paginate();
+
+//   // const meta = await queryBuilder.getMeta()
+
+//   const [data, meta] = await Promise.all([projects.build(), queryBuilder.getMeta()]);
+//   return {
+//     data,
+//     meta,
+//   };
+// };
+
 const getAllProjects = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(Project.find().populate("client"), query);
+  const projectQuery = new QueryBuilder(Project.find().populate("client"), query).search(projectSearchableFields).filter().sort().paginate().fields();
 
-  const projects = await queryBuilder.search(projectSearchableFields).filter().sort().fields().paginate();
+  const data = await projectQuery.modelQuery;
+  const meta = await projectQuery.countTotal();
 
-  // const meta = await queryBuilder.getMeta()
-
-  const [data, meta] = await Promise.all([projects.build(), queryBuilder.getMeta()]);
   return {
-    data,
     meta,
+    data,
   };
 };
 
