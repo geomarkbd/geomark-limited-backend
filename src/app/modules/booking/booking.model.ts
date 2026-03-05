@@ -8,9 +8,9 @@ const bookingSchema = new Schema<IBooking>(
       ref: "User",
       required: true,
     },
-    tour: {
+    product: {
       type: Schema.Types.ObjectId,
-      ref: "Tour",
+      ref: "Product",
       required: true,
     },
     payment: {

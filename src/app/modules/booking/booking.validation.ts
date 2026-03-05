@@ -2,7 +2,7 @@ import { z } from "zod";
 import { BOOKING_STATUS } from "./booking.interface";
 
 export const createBookingZodSchema = z.object({
-  tour: z.string(),
+  product: z.string(),
   productCount: z.number().int().positive(),
 });
 

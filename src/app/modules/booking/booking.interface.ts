@@ -11,7 +11,7 @@ export enum BOOKING_STATUS {
 
 export interface IBooking {
   user: Types.ObjectId;
-  tour: Types.ObjectId;
+  product: Types.ObjectId;
   payment?: Types.ObjectId;
   productCount: number;
   status: BOOKING_STATUS;

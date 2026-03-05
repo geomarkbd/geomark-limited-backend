@@ -1,6 +1,5 @@
 import httpStatus from "http-status-codes";
 import AppError from "../../errorHelpers/AppError";
-
 import { QueryBuilder } from "../../utils/QueryBuilder";
 import { IProject } from "./project.interface";
 import { Project } from "./project.model";
