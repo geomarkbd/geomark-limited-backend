@@ -10,7 +10,7 @@ import { User } from "../user/user.model";
 import { BOOKING_STATUS, IBooking } from "./booking.interface";
 import { Booking } from "./booking.model";
 import { getTransactionId } from "../../utils/getTransactionId";
-// import { Product } from "../product/product.model";
+import { Product } from "../product/product.model";
 
 /**
  * Duplicate DB Collections / replica
@@ -28,17 +28,17 @@ const createBooking = async (payload: Partial<IBooking>, userId: string) => {
     const user = await User.findById(userId);
 
     if (!user?.phone || !user.address) {
-      throw new AppError(httpStatus.BAD_REQUEST, "Please Update Your Profile to Book a Tour.");
+      throw new AppError(httpStatus.BAD_REQUEST, "Please Update Your Profile to Book a Product.");
     }
 
-    // const product = await Product.findById(payload.product).select("costFrom");
+    const product = await Product.findById(payload.product).select("price");
 
-    // if (!product?.costFrom) {
-    //   throw new AppError(httpStatus.BAD_REQUEST, "No Tour Cost Found!");
-    // }
+    if (!product?.price) {
+      throw new AppError(httpStatus.BAD_REQUEST, "No Product Price Found!");
+    }
 
-    //     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    // const amount = Number(product.costFrom) * Number(payload.guestCount!);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const amount = Number(product.price) * Number(payload.productCount!);
 
     const booking = await Booking.create(
       [
@@ -57,7 +57,7 @@ const createBooking = async (payload: Partial<IBooking>, userId: string) => {
           booking: booking[0]._id,
           status: PAYMENT_STATUS.UNPAID,
           transactionId: transactionId,
-          amount: 10, //amount,
+          amount: amount,
         },
       ],
       { session },
@@ -65,7 +65,7 @@ const createBooking = async (payload: Partial<IBooking>, userId: string) => {
 
     const updatedBooking = await Booking.findByIdAndUpdate(booking[0]._id, { payment: payment[0]._id }, { new: true, runValidators: true, session })
       .populate("user", "name email phone address")
-      .populate("tour", "title costFrom")
+      .populate("product", "title price")
       .populate("payment");
 
     const userAddress = (updatedBooking?.user as any).address;
@@ -78,7 +78,7 @@ const createBooking = async (payload: Partial<IBooking>, userId: string) => {
       email: userEmail,
       phoneNumber: userPhoneNumber,
       name: userName,
-      amount: 10, //amount,
+      amount: amount,
       transactionId: transactionId,
     };
 

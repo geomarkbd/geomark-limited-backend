@@ -67,7 +67,8 @@ const getAllUsers = async (query: Record<string, string>) => {
   const queryBuilder = new QueryBuilder(User.find(), query);
   const usersData = queryBuilder.filter().search(userSearchableFields).sort().fields().paginate();
 
-  const [data, meta] = await Promise.all([usersData.build(), queryBuilder.getMeta()]);
+  const data = await usersData.modelQuery;
+  const meta = await usersData.countTotal();
 
   return {
     data,

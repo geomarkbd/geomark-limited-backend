@@ -44,12 +44,12 @@ const updateProduct = async (id: string, payload: Partial<IProduct>) => {
 };
 
 const getAllProducts = async (query: Record<string, string>) => {
-  const prodictQuery = new QueryBuilder(Product.find(), query).search(productSearchableFields).filter().sort().fields().paginate();
+  const productQuery = new QueryBuilder(Product.find(), query).search(productSearchableFields).filter().sort().fields().paginate();
 
   // const meta = await queryBuilder.getMeta()
 
-  const data = await prodictQuery.modelQuery;
-  const meta = await prodictQuery.countTotal();
+  const data = await productQuery.modelQuery;
+  const meta = await productQuery.countTotal();
   return {
     data,
     meta,
