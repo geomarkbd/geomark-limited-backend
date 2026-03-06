@@ -49,7 +49,8 @@ const getAllEmployees = async (query: Record<string, string>) => {
 
   // const meta = await queryBuilder.getMeta()
 
-  const [data, meta] = await Promise.all([employees.build(), queryBuilder.getMeta()]);
+  const data = employees.modelQuery;
+  const meta = employees.countTotal();
   return {
     data,
     meta,
