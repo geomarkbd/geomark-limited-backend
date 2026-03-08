@@ -1,74 +1,78 @@
 import httpStatus from "http-status-codes";
 import AppError from "../../errorHelpers/AppError";
-
 import { QueryBuilder } from "../../utils/QueryBuilder";
-import { IProject } from "./project.interface";
+import { IProject, TUpdateProjectPayload } from "./project.interface";
 import { Project } from "./project.model";
 import { deleteImageFromCLoudinary } from "../../config/cloudinary.config";
 import { projectSearchableFields } from "./project.constant";
 
 const createProject = async (payload: IProject) => {
   const existingProjectName = await Project.findOne({ name: payload.name });
-  // const existingProjecttitle = await Project.findOne({ title: payload.title });
 
   if (existingProjectName) {
     throw new AppError(httpStatus.CONFLICT, "Project with this name already exists");
   }
-  // if (existingProjecttitle) {
-  //   throw new AppError(httpStatus.CONFLICT, "Project with this title already exists");
-  // }
 
   const project = await Project.create(payload);
   return project;
 };
 
-const updateProject = async (id: string, payload: Partial<IProject>) => {
+const updateProject = async (id: string, payload: TUpdateProjectPayload) => {
   const existingProject = await Project.findById(id);
 
-  const existingProjectName = await Project.findOne({ name: payload.name });
-  const existingProjecttitle = await Project.findOne({ title: payload.title });
-
   if (!existingProject) {
-    throw new Error("Project not found.");
+    throw new AppError(httpStatus.NOT_FOUND, "Project not found");
   }
+
+  const existingProjectName = await Project.findOne({
+    name: payload.name,
+    _id: { $ne: id },
+  });
 
   if (existingProjectName) {
     throw new AppError(httpStatus.CONFLICT, "Project with this name already exists");
   }
-  if (existingProjecttitle) {
-    throw new AppError(httpStatus.CONFLICT, "Project with this title already exists");
+
+  const startDate = payload.startDate ?? existingProject.startDate;
+  const endDate = payload.endDate ?? existingProject.endDate;
+
+  if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+    throw new AppError(httpStatus.BAD_REQUEST, "endDate cannot be earlier than startDate");
   }
 
-  const duplicateProject = await Project.findOne({
-    name: payload.name,
+  const existingGallery = existingProject.gallery || [];
+  const newGallery = payload.gallery || [];
+  const removeGallery = payload.removeGallery || [];
+
+  const filteredGallery = existingGallery.filter((img) => !removeGallery.includes(img));
+
+  payload.gallery = [...new Set([...filteredGallery, ...newGallery])];
+
+  const updatedProject = await Project.findByIdAndUpdate(id, payload, {
+    new: true,
+    runValidators: true,
   });
-
-  if (duplicateProject) {
-    throw new Error("A Project with this name already exists.");
-  }
-
-  //
-
-  const updatedProject = await Project.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
 
   if (payload.picture && existingProject.picture) {
     await deleteImageFromCLoudinary(existingProject.picture);
+  }
+
+  for (const image of removeGallery) {
+    await deleteImageFromCLoudinary(image);
   }
 
   return updatedProject;
 };
 
 const getAllProjects = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(Project.find().populate("client"), query);
+  const projectQuery = new QueryBuilder(Project.find().populate("client"), query).search(projectSearchableFields).filter().sort().paginate().fields();
 
-  const projects = await queryBuilder.search(projectSearchableFields).filter().sort().fields().paginate();
+  const data = await projectQuery.modelQuery;
+  const meta = await projectQuery.countTotal();
 
-  // const meta = await queryBuilder.getMeta()
-
-  const [data, meta] = await Promise.all([projects.build(), queryBuilder.getMeta()]);
   return {
-    data,
     meta,
+    data,
   };
 };
 

@@ -4,14 +4,15 @@ import { IEmployee } from "./employee.interface";
 const employeeSchema = new Schema<IEmployee>(
   {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    phone: { type: String, required: true },
+    email: { type: String },
+    phone: { type: String },
     address: { type: String },
     designation: { type: String, required: true },
     picture: { type: String },
     facebook: { type: String },
     linkedin: { type: String },
-    twitter: { type: String },
+    institute: { type: String },
+    education: { type: String },
 
     joinDate: { type: Date },
   },

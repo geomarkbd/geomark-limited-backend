@@ -1,2 +1,2 @@
-export const projectSearchableFields = ["name", "title", "description", "status"];
-export const projectFilterableFields = ["title", "status", "client"];
+export const projectSearchableFields = ["name", "title", "description"];
+export const projectFilterableFields = ["title", "status", "year"];

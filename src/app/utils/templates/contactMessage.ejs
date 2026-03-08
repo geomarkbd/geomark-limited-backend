@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>New Contact Message</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        color: #333;
+      }
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background: #fff;
+        padding: 30px;
+        border-radius: 8px;
+      }
+      .field {
+        margin-bottom: 15px;
+      }
+      .label {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h2>New Message from Website</h2>
+
+      <div class="field">
+        <span class="label">Name:</span>
+        <%= name %>
+      </div>
+
+      <div class="field">
+        <span class="label">Email:</span>
+        <%= email %>
+      </div>
+
+      <div class="field">
+        <span class="label">Subject:</span>
+        <%= subject %>
+      </div>
+
+      <div class="field">
+        <span class="label">Message:</span>
+        <p><%= message %></p>
+      </div>
+    </div>
+  </body>
+</html>
