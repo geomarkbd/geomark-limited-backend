@@ -8,14 +8,10 @@ import { projectSearchableFields } from "./project.constant";
 
 const createProject = async (payload: IProject) => {
   const existingProjectName = await Project.findOne({ name: payload.name });
-  // const existingProjecttitle = await Project.findOne({ title: payload.title });
 
   if (existingProjectName) {
     throw new AppError(httpStatus.CONFLICT, "Project with this name already exists");
   }
-  // if (existingProjecttitle) {
-  //   throw new AppError(httpStatus.CONFLICT, "Project with this title already exists");
-  // }
 
   const project = await Project.create(payload);
   return project;
@@ -24,52 +20,68 @@ const createProject = async (payload: IProject) => {
 const updateProject = async (id: string, payload: Partial<IProject>) => {
   const existingProject = await Project.findById(id);
 
-  const existingProjectName = await Project.findOne({ name: payload.name });
-  const existingProjecttitle = await Project.findOne({ title: payload.title });
-
   if (!existingProject) {
-    throw new Error("Project not found.");
+    throw new AppError(httpStatus.NOT_FOUND, "Project not found");
   }
+
+  const existingProjectName = await Project.findOne({
+    name: payload.name,
+    _id: { $ne: id },
+  });
 
   if (existingProjectName) {
     throw new AppError(httpStatus.CONFLICT, "Project with this name already exists");
   }
-  if (existingProjecttitle) {
-    throw new AppError(httpStatus.CONFLICT, "Project with this title already exists");
+
+  const startDate = payload.startDate ?? existingProject.startDate;
+  const endDate = payload.endDate ?? existingProject.endDate;
+
+  if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+    throw new AppError(httpStatus.BAD_REQUEST, "endDate cannot be earlier than startDate");
   }
 
-  const duplicateProject = await Project.findOne({
-    name: payload.name,
+  if (payload.gallery !== undefined) {
+    if (!Array.isArray(payload.gallery)) {
+      throw new AppError(httpStatus.BAD_REQUEST, "gallery must be an array of image paths");
+    }
+
+    const cleanedGallery = payload.gallery.map((item) => String(item).trim()).filter((item) => item.length > 0);
+
+    if (cleanedGallery.length !== payload.gallery.length) {
+      throw new AppError(httpStatus.BAD_REQUEST, "gallery cannot contain empty values");
+    }
+
+    const uniqueGallery = [...new Set(cleanedGallery)];
+
+    if (uniqueGallery.length > 10) {
+      throw new AppError(httpStatus.BAD_REQUEST, "gallery cannot contain more than 10 images");
+    }
+
+    payload.gallery = uniqueGallery;
+  }
+
+  const updatedProject = await Project.findByIdAndUpdate(id, payload, {
+    new: true,
+    runValidators: true,
   });
-
-  if (duplicateProject) {
-    throw new Error("A Project with this name already exists.");
-  }
-
-  //
-
-  const updatedProject = await Project.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
 
   if (payload.picture && existingProject.picture) {
     await deleteImageFromCLoudinary(existingProject.picture);
   }
 
+  if (payload.gallery) {
+    const oldGallery = existingProject.gallery || [];
+    const newGallery = payload.gallery || [];
+
+    const removedImages = oldGallery.filter((img) => !newGallery.includes(img));
+
+    for (const image of removedImages) {
+      await deleteImageFromCLoudinary(image);
+    }
+  }
+
   return updatedProject;
 };
-
-// const getAllProjects = async (query: Record<string, string>) => {
-//   const queryBuilder = new QueryBuilder(Project.find().populate("client"), query);
-
-//   const projects = await queryBuilder.search(projectSearchableFields).filter().sort().fields().paginate();
-
-//   // const meta = await queryBuilder.getMeta()
-
-//   const [data, meta] = await Promise.all([projects.build(), queryBuilder.getMeta()]);
-//   return {
-//     data,
-//     meta,
-//   };
-// };
 
 const getAllProjects = async (query: Record<string, string>) => {
   const projectQuery = new QueryBuilder(Project.find().populate("client"), query).search(projectSearchableFields).filter().sort().paginate().fields();

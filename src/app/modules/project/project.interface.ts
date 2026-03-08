@@ -1,5 +1,3 @@
-import { Types } from "mongoose";
-
 export enum ProjectStatus {
   UPCOMING = "UPCOMING",
   ONGOING = "ONGOING",
@@ -13,7 +11,10 @@ export interface IProject {
   details: string;
   status: ProjectStatus;
   startDate: Date;
-  endDate: Date;
+  endDate?: Date;
+  year?: string;
+  location: string;
   picture?: string;
-  client: Types.ObjectId;
+  gallery?: string[];
+  client: string;
 }

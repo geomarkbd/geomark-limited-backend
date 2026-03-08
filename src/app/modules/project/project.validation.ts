@@ -8,9 +8,12 @@ export const createProjectZodSchema = z.object({
   details: z.string({ invalid_type_error: "Details is required" }),
   status: z.enum(Object.values(ProjectStatus) as [string]),
   startDate: z.string({ invalid_type_error: "Start Date is required" }),
-  endDate: z.string({ invalid_type_error: "End Date is required" }),
+  endDate: z.string().optional(),
+  year: z.string().optional(),
+  location: z.string(),
   client: z.string({ invalid_type_error: "Client ID is required" }),
   picture: z.string().optional(),
+  gallery: z.array(z.string()).optional(),
 });
 
 export const updateProjectZodSchema = z.object({
@@ -21,6 +24,9 @@ export const updateProjectZodSchema = z.object({
   status: z.enum(Object.values(ProjectStatus) as [string]).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
+  year: z.string().optional(),
+  location: z.string().optional(),
   client: z.string().optional(),
   picture: z.string().optional(),
+  gallery: z.array(z.string()).optional(),
 });

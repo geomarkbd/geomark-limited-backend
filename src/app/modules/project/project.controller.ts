@@ -5,13 +5,20 @@ import { ProjectService } from "./project.service";
 import { IProject } from "./project.interface";
 
 const createProject = catchAsync(async (req: Request, res: Response) => {
-  const payload: IProject = {
+  //
+  const files = req.files as {
+    picture?: Express.Multer.File[];
+    gallery?: Express.Multer.File[];
+  };
+
+  const payload: Partial<IProject> = {
     ...req.body,
-    picture: req.file?.path,
+    picture: files?.picture?.[0]?.path,
+    gallery: files?.gallery?.map((file) => file.path) || [],
   };
 
   // const payload = req.body;
-  const result = await ProjectService.createProject(payload);
+  const result = await ProjectService.createProject(payload as IProject);
   sendResponse(res, {
     statusCode: 201,
     success: true,
@@ -23,11 +30,25 @@ const createProject = catchAsync(async (req: Request, res: Response) => {
 const updateProject = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id as string;
 
-  const payload: IProject = {
-    ...req.body,
-    picture: req.file?.path,
+  const files = req.files as {
+    picture?: Express.Multer.File[];
+    gallery?: Express.Multer.File[];
   };
+
+  const payload: Partial<IProject> = {
+    ...req.body,
+  };
+
+  if (files?.picture?.[0]?.path) {
+    payload.picture = files.picture[0].path;
+  }
+
+  if (files?.gallery?.length) {
+    payload.gallery = files.gallery.map((file) => file.path);
+  }
+
   const result = await ProjectService.updateProject(id, payload);
+
   sendResponse(res, {
     statusCode: 200,
     success: true,
