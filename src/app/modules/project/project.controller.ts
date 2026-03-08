@@ -35,7 +35,7 @@ const updateProject = catchAsync(async (req: Request, res: Response) => {
     gallery?: Express.Multer.File[];
   };
 
-  const payload: Partial<IProject> = {
+  const payload: Partial<IProject> & { removeGallery?: string[] } = {
     ...req.body,
   };
 
@@ -45,6 +45,10 @@ const updateProject = catchAsync(async (req: Request, res: Response) => {
 
   if (files?.gallery?.length) {
     payload.gallery = files.gallery.map((file) => file.path);
+  }
+
+  if (req.body.removeGallery) {
+    payload.removeGallery = JSON.parse(req.body.removeGallery);
   }
 
   const result = await ProjectService.updateProject(id, payload);

@@ -50,13 +50,12 @@ const updateService = async (id: string, payload: Partial<IService>) => {
 };
 
 const getAllServices = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(Service.find(), query);
-
-  const services = await queryBuilder.search(serviceSearchableFields).filter().sort().fields().paginate();
+  const ServiceQuery = new QueryBuilder(Service.find(), query).search(serviceSearchableFields).filter().sort().fields().paginate();
 
   // const meta = await queryBuilder.getMeta()
 
-  const [data, meta] = await Promise.all([services.build(), queryBuilder.getMeta()]);
+  const data = await ServiceQuery.modelQuery;
+  const meta = await ServiceQuery.countTotal();
   return {
     data,
     meta,

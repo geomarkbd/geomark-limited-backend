@@ -43,14 +43,12 @@ const updateEmployee = async (id: string, payload: Partial<IEmployee>) => {
 };
 
 const getAllEmployees = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(Employee.find(), query);
-
-  const employees = await queryBuilder.search(employeeSearchableFields).filter().sort().fields().paginate();
+  const EmpoyeeQuery = new QueryBuilder(Employee.find(), query).search(employeeSearchableFields).filter().sort().fields().paginate();
 
   // const meta = await queryBuilder.getMeta()
 
-  const data = employees.modelQuery;
-  const meta = employees.countTotal();
+  const data = EmpoyeeQuery.modelQuery;
+  const meta = EmpoyeeQuery.countTotal();
   return {
     data,
     meta,

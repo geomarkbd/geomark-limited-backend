@@ -4,11 +4,16 @@ export enum ProjectStatus {
   COMPLETED = "COMPLETED",
 }
 
+export type TUpdateProjectPayload = Partial<IProject> & {
+  removeGallery?: string[];
+};
+
 export interface IProject {
   title: string;
   name: string;
   description: string;
-  details: string;
+  objective?: string;
+  responsibility?: string;
   status: ProjectStatus;
   startDate: Date;
   endDate?: Date;

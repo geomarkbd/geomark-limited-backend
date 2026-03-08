@@ -9,6 +9,7 @@ import { ContactRoutes } from "../modules/contact/contact.route";
 import { BookingRoutes } from "../modules/booking/booking.route";
 import { PaymentRoutes } from "../modules/payment/payment.route";
 import { ProductRoutes } from "../modules/product/product.route";
+import { NewsRoutes } from "../modules/news/news.route";
 
 export const router = Router();
 
@@ -43,6 +44,11 @@ const moduleRoutes = [
   {
     path: "/product",
     route: ProductRoutes,
+  },
+
+  {
+    path: "/news",
+    route: NewsRoutes,
   },
   {
     path: "/contact",

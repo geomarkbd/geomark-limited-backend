@@ -44,13 +44,12 @@ const updateClient = async (id: string, payload: Partial<IClient>) => {
 };
 
 const getAllClients = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(Client.find(), query);
-
-  const clients = await queryBuilder.search(clientSearchableFields).filter().sort().fields().paginate();
+  const ClientQuery = new QueryBuilder(Client.find(), query).search(clientSearchableFields).filter().sort().fields().paginate();
 
   // const meta = await queryBuilder.getMeta()
 
-  const [data, meta] = await Promise.all([clients.build(), queryBuilder.getMeta()]);
+  const data = await ClientQuery.modelQuery;
+  const meta = await ClientQuery.countTotal();
   return {
     data,
     meta,

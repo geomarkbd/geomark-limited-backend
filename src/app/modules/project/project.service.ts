@@ -1,7 +1,7 @@
 import httpStatus from "http-status-codes";
 import AppError from "../../errorHelpers/AppError";
 import { QueryBuilder } from "../../utils/QueryBuilder";
-import { IProject } from "./project.interface";
+import { IProject, TUpdateProjectPayload } from "./project.interface";
 import { Project } from "./project.model";
 import { deleteImageFromCLoudinary } from "../../config/cloudinary.config";
 import { projectSearchableFields } from "./project.constant";
@@ -17,7 +17,7 @@ const createProject = async (payload: IProject) => {
   return project;
 };
 
-const updateProject = async (id: string, payload: Partial<IProject>) => {
+const updateProject = async (id: string, payload: TUpdateProjectPayload) => {
   const existingProject = await Project.findById(id);
 
   if (!existingProject) {
@@ -40,25 +40,13 @@ const updateProject = async (id: string, payload: Partial<IProject>) => {
     throw new AppError(httpStatus.BAD_REQUEST, "endDate cannot be earlier than startDate");
   }
 
-  if (payload.gallery !== undefined) {
-    if (!Array.isArray(payload.gallery)) {
-      throw new AppError(httpStatus.BAD_REQUEST, "gallery must be an array of image paths");
-    }
+  const existingGallery = existingProject.gallery || [];
+  const newGallery = payload.gallery || [];
+  const removeGallery = payload.removeGallery || [];
 
-    const cleanedGallery = payload.gallery.map((item) => String(item).trim()).filter((item) => item.length > 0);
+  const filteredGallery = existingGallery.filter((img) => !removeGallery.includes(img));
 
-    if (cleanedGallery.length !== payload.gallery.length) {
-      throw new AppError(httpStatus.BAD_REQUEST, "gallery cannot contain empty values");
-    }
-
-    const uniqueGallery = [...new Set(cleanedGallery)];
-
-    if (uniqueGallery.length > 10) {
-      throw new AppError(httpStatus.BAD_REQUEST, "gallery cannot contain more than 10 images");
-    }
-
-    payload.gallery = uniqueGallery;
-  }
+  payload.gallery = [...new Set([...filteredGallery, ...newGallery])];
 
   const updatedProject = await Project.findByIdAndUpdate(id, payload, {
     new: true,
@@ -69,15 +57,8 @@ const updateProject = async (id: string, payload: Partial<IProject>) => {
     await deleteImageFromCLoudinary(existingProject.picture);
   }
 
-  if (payload.gallery) {
-    const oldGallery = existingProject.gallery || [];
-    const newGallery = payload.gallery || [];
-
-    const removedImages = oldGallery.filter((img) => !newGallery.includes(img));
-
-    for (const image of removedImages) {
-      await deleteImageFromCLoudinary(image);
-    }
+  for (const image of removeGallery) {
+    await deleteImageFromCLoudinary(image);
   }
 
   return updatedProject;

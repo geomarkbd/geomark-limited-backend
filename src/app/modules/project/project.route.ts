@@ -2,9 +2,10 @@ import { validateRequest } from "../../middlewares/validateRequest";
 import express from "express";
 import { checkAuth } from "../../middlewares/checkAuth";
 import { Role } from "../user/user.interface";
-import { createProjectZodSchema, updateProjectZodSchema } from "./project.validation";
+
 import { ProjectController } from "./project.controller";
 import { multerUpload } from "../../config/multer.config";
+import { createProjectZodSchema, updateProjectZodSchema } from "./project.validation";
 
 const router = express.Router();
 router.post(

@@ -2,15 +2,16 @@ import z from "zod";
 
 export const createEmployeeZodSchema = z.object({
   name: z.string({ invalid_type_error: "Email must be string" }),
-  email: z.string({ invalid_type_error: "Email must be string" }).email({ message: "Invalid email address format." }),
-  phone: z.string({ invalid_type_error: "Phone is required" }),
+  email: z.string().email({ message: "Invalid email address format." }),
+  phone: z.string(),
   address: z.string().optional(),
   designation: z.string({ invalid_type_error: "Designation is required" }),
   facebook: z.string().optional(),
   linkedin: z.string().optional(),
-  twitter: z.string().optional(),
-  picture: z.string().optional(),
+  institute: z.string().optional(),
+  education: z.string().optional(),
   joinDate: z.string().optional(),
+  picture: z.string().optional(),
 });
 
 export const updateEmployeeZodSchema = z.object({
@@ -21,7 +22,8 @@ export const updateEmployeeZodSchema = z.object({
   designation: z.string().optional(),
   facebook: z.string().optional(),
   linkedin: z.string().optional(),
-  twitter: z.string().optional(),
+  institute: z.string().optional(),
+  education: z.string().optional(),
   picture: z.string().optional(),
   joinDate: z.string().optional(),
 });
