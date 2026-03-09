@@ -6,8 +6,8 @@ export interface IInvoiceData {
   transactionId: string;
   bookingDate: Date;
   userName: string;
-  tourTitle: string;
-  guestCount: number;
+  productName: string;
+  quantity: number;
   totalAmount: number;
 }
 
@@ -30,8 +30,8 @@ export const generatePdf = async (invoiceData: IInvoiceData): Promise<Buffer<Arr
 
       doc.moveDown();
 
-      doc.text(`Tour: ${invoiceData.tourTitle}`);
-      doc.text(`Guests: ${invoiceData.guestCount}`);
+      doc.text(`Product: ${invoiceData.productName}`);
+      doc.text(`Quantity: ${invoiceData.quantity}`);
       doc.text(`Total Amount: $${invoiceData.totalAmount.toFixed(2)}`);
       doc.moveDown();
 

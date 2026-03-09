@@ -47,8 +47,8 @@ const getAllEmployees = async (query: Record<string, string>) => {
 
   // const meta = await queryBuilder.getMeta()
 
-  const data = EmpoyeeQuery.modelQuery;
-  const meta = EmpoyeeQuery.countTotal();
+  const data = await EmpoyeeQuery.modelQuery;
+  const meta = await EmpoyeeQuery.countTotal();
   return {
     data,
     meta,
