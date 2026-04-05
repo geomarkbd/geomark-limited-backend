@@ -1,3 +1,5 @@
+import { Types } from "mongoose";
+
 export enum ProjectStatus {
   UPCOMING = "UPCOMING",
   ONGOING = "ONGOING",
@@ -9,7 +11,7 @@ export type TUpdateProjectPayload = Partial<IProject> & {
 };
 
 export interface IProject {
-  title: string;
+  service: Types.ObjectId;
   name: string;
   description: string;
   objective?: string;
@@ -21,5 +23,5 @@ export interface IProject {
   location: string;
   picture?: string;
   gallery?: string[];
-  client: string;
+  client: Types.ObjectId;
 }
