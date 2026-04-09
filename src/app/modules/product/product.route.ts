@@ -10,14 +10,25 @@ const router = express.Router();
 router.post(
   "/create-product",
   checkAuth(Role.SUPER_ADMIN, Role.ADMIN),
-  multerUpload.single("file"),
+
+  multerUpload.fields([
+    { name: "picture", maxCount: 1 },
+    { name: "gallery", maxCount: 10 },
+  ]),
+
   validateRequest(createProductZodSchema),
   ProductController.createProduct,
 );
+
 router.patch(
   "/:id",
   checkAuth(Role.SUPER_ADMIN, Role.ADMIN),
-  multerUpload.single("file"),
+
+  multerUpload.fields([
+    { name: "picture", maxCount: 1 },
+    { name: "gallery", maxCount: 10 },
+  ]),
+
   validateRequest(updateProductZodSchema),
   ProductController.updateProduct,
 );
