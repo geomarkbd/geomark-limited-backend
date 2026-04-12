@@ -1,17 +1,37 @@
 import cors from "cors";
 import express, { Request, Response } from "express";
+import cookieParser from "cookie-parser";
 import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
 import notFound from "./app/middlewares/notFound";
 import { router } from "./app/routes";
-import cookieParser from "cookie-parser";
 import { envVars } from "./app/config/env";
 
 const app = express();
+
+const allowedOrigins = ["http://localhost:3000", envVars.FRONTEND_URL].filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      console.log("Request Origin:", origin);
+      console.log("Allowed Origins:", allowedOrigins);
+
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Not allowed by CORS: ${origin}`));
+    },
+    credentials: true,
+  }),
+);
+
 app.use(cookieParser());
 app.use(express.json());
-app.set("trust proxy", 1);
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({ origin: [envVars.FRONTEND_URL, "http://localhost:3000"], credentials: true }));
+app.set("trust proxy", 1);
 
 app.use("/api/v1", router);
 
@@ -22,7 +42,6 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use(globalErrorHandler);
-
 app.use(notFound);
 
 export default app;
