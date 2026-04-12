@@ -4,6 +4,7 @@ export interface IEmployee {
   phone?: string;
   address?: string;
   designation: string;
+  rank: string;
   institute: string;
   education: string;
   facebook?: string;
