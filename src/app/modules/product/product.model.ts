@@ -4,12 +4,12 @@ import { IProduct } from "./product.interface";
 const ProductSchema = new Schema<IProduct>(
   {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    phone: { type: String },
+    description: { type: String, required: true },
+    location: { type: String, required: true },
     price: { type: Number },
     quantity: { type: Number },
-    address: { type: String },
     picture: { type: String },
+    gallery: [{ type: String }],
   },
   {
     timestamps: true,

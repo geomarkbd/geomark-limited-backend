@@ -1,9 +1,13 @@
+export type TUpdateProductPayload = Partial<IProduct> & {
+  removeGallery?: string[];
+};
+
 export interface IProduct {
   name: string;
-  email: string;
-  phone?: string;
+  description: string;
+  location: string;
   price: number;
   quantity: number;
-  address?: string;
   picture?: string;
+  gallery?: string[];
 }

@@ -7,7 +7,10 @@ const validDateString = z.string().refine((value) => !isNaN(Date.parse(value)), 
 
 export const createProjectZodSchema = z
   .object({
-    title: z.string().min(1, "Title is required"),
+    service: z
+      .string()
+      .trim()
+      .regex(/^[a-f\d]{24}$/i, "Invalid service id"),
     name: z.string().min(1, "Name is required"),
     description: z.string().min(1, "Description is required"),
     objective: z.string().optional(),
@@ -16,7 +19,10 @@ export const createProjectZodSchema = z
     startDate: validDateString,
     endDate: validDateString.optional(),
     location: z.string().min(1, "Location is required"),
-    client: z.string().min(1, "Client is required"),
+    client: z
+      .string()
+      .trim()
+      .regex(/^[a-f\d]{24}$/i, "Invalid client id"),
   })
   .superRefine((data, ctx) => {
     if (data.startDate && data.endDate) {
@@ -35,7 +41,11 @@ export const createProjectZodSchema = z
 
 export const updateProjectZodSchema = z
   .object({
-    title: z.string().min(1, "Title cannot be empty").optional(),
+    service: z
+      .string()
+      .trim()
+      .regex(/^[a-f\d]{24}$/i, "Invalid service id")
+      .optional(),
     name: z.string().min(1, "Name cannot be empty").optional(),
     description: z.string().min(1, "Description cannot be empty").optional(),
     objective: z.string().optional(),
@@ -44,7 +54,11 @@ export const updateProjectZodSchema = z
     startDate: validDateString.optional(),
     endDate: validDateString.optional(),
     location: z.string().min(1, "Location cannot be empty").optional(),
-    client: z.string().min(1, "Client cannot be empty").optional(),
+    client: z
+      .string()
+      .trim()
+      .regex(/^[a-f\d]{24}$/i, "Invalid client id")
+      .optional(),
 
     // for multipart/form-data
     // send like: ["url1","url2"]

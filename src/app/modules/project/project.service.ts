@@ -33,6 +33,10 @@ const updateProject = async (id: string, payload: TUpdateProjectPayload) => {
     throw new AppError(httpStatus.CONFLICT, "Project with this name already exists");
   }
 
+  if (payload.startDate) {
+    payload.year = new Date(payload.startDate).getFullYear().toString();
+  }
+
   const startDate = payload.startDate ?? existingProject.startDate;
   const endDate = payload.endDate ?? existingProject.endDate;
 
@@ -51,7 +55,9 @@ const updateProject = async (id: string, payload: TUpdateProjectPayload) => {
   const updatedProject = await Project.findByIdAndUpdate(id, payload, {
     new: true,
     runValidators: true,
-  });
+  })
+    .populate("service", "name")
+    .populate("client", "name");
 
   if (payload.picture && existingProject.picture) {
     await deleteImageFromCLoudinary(existingProject.picture);
@@ -65,7 +71,12 @@ const updateProject = async (id: string, payload: TUpdateProjectPayload) => {
 };
 
 const getAllProjects = async (query: Record<string, string>) => {
-  const projectQuery = new QueryBuilder(Project.find().populate("client"), query).search(projectSearchableFields).filter().sort().paginate().fields();
+  const projectQuery = new QueryBuilder(Project.find().populate("service", "name").populate("client", "name"), query)
+    .search(projectSearchableFields)
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
 
   const data = await projectQuery.modelQuery;
   const meta = await projectQuery.countTotal();
@@ -77,7 +88,7 @@ const getAllProjects = async (query: Record<string, string>) => {
 };
 
 const getSingleProject = async (id: string) => {
-  const project = await Project.findById(id);
+  const project = await Project.findById(id).populate("service", "name").populate("client", "name");
   return {
     data: project,
   };

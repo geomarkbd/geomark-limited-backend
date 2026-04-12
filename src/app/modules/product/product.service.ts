@@ -1,6 +1,6 @@
 import httpStatus from "http-status-codes";
 import AppError from "../../errorHelpers/AppError";
-import { IProduct } from "./product.interface";
+import { IProduct, TUpdateProductPayload } from "./product.interface";
 import { Product } from "./product.model";
 import { productSearchableFields } from "./product.constant";
 import { QueryBuilder } from "../../utils/QueryBuilder";
@@ -17,27 +17,37 @@ const createProduct = async (payload: IProduct) => {
   return product;
 };
 
-const updateProduct = async (id: string, payload: Partial<IProduct>) => {
+const updateProduct = async (id: string, payload: TUpdateProductPayload) => {
   const existingProduct = await Product.findById(id);
 
   if (!existingProduct) {
     throw new Error("Product not found.");
   }
 
-  const duplicateProduct = await Product.findOne({
+  const existingProductName = await Product.findOne({
     name: payload.name,
   });
 
-  if (duplicateProduct) {
+  if (existingProductName) {
     throw new Error("A Product with this name already exists.");
   }
 
-  //
+  const existingGallery = existingProduct.gallery || [];
+  const newGallery = payload.gallery || [];
+  const removeGallery = payload.removeGallery || [];
+
+  const filteredGallery = existingGallery.filter((img) => !removeGallery.includes(img));
+
+  payload.gallery = [...new Set([...filteredGallery, ...newGallery])];
 
   const updatedProduct = await Product.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
 
   if (payload.picture && existingProduct.picture) {
     await deleteImageFromCLoudinary(existingProduct.picture);
+  }
+
+  for (const image of removeGallery) {
+    await deleteImageFromCLoudinary(image);
   }
 
   return updatedProduct;

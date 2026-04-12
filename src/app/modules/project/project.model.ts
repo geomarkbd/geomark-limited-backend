@@ -1,22 +1,68 @@
 import { Schema, model } from "mongoose";
+import { IProject, ProjectStatus } from "./project.interface";
 
-const projectSchema = new Schema(
+const projectSchema = new Schema<IProject>(
   {
-    title: { type: String, required: true },
-    name: { type: String, required: true, unique: true },
-    description: { type: String, required: true },
-    objective: { type: String },
-    responsibility: { type: String },
-    status: { type: String, required: true },
-    startDate: { type: Date, required: true },
-    endDate: { type: Date },
-    year: { type: String },
-    location: { type: String, required: true },
-    picture: { type: String },
-    gallery: [{ type: String }],
-    client: { type: String, required: true },
+    service: {
+      type: Schema.Types.ObjectId,
+      ref: "Service",
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    objective: {
+      type: String,
+      trim: true,
+    },
+    responsibility: {
+      type: String,
+      trim: true,
+    },
+    status: {
+      type: String,
+      enum: Object.values(ProjectStatus),
+      required: true,
+    },
+    startDate: {
+      type: Date,
+      required: true,
+    },
+    endDate: {
+      type: Date,
+    },
+    year: {
+      type: String,
+      trim: true,
+    },
+    location: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    picture: {
+      type: String,
+    },
+    gallery: {
+      type: [String],
+      default: [],
+    },
+    client: {
+      type: Schema.Types.ObjectId,
+      ref: "Client",
+      required: true,
+    },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+  },
 );
 
 projectSchema.pre("validate", function (next) {
