@@ -22,10 +22,12 @@ const createService = catchAsync(async (req: Request, res: Response) => {
 
 const updateService = catchAsync(async (req: Request, res: Response) => {
   const id = req.params.id as string;
+
   const payload: IService = {
     ...req.body,
     picture: req.file?.path,
   };
+
   const result = await ServiceService.updateService(id, payload);
   sendResponse(res, {
     statusCode: 200,
