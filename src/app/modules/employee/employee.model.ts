@@ -8,6 +8,7 @@ const employeeSchema = new Schema<IEmployee>(
     phone: { type: String },
     address: { type: String },
     designation: { type: String, required: true },
+    description: { type: String },
     rank: { type: String, required: true },
     picture: { type: String },
     facebook: { type: String },

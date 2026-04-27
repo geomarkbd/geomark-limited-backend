@@ -4,9 +4,10 @@ export interface IEmployee {
   phone?: string;
   address?: string;
   designation: string;
+  description?: string;
   rank: string;
-  institute: string;
-  education: string;
+  institute?: string;
+  education?: string;
   facebook?: string;
   linkedin?: string;
   joinDate?: Date;
