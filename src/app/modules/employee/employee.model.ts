@@ -4,6 +4,7 @@ import { IEmployee } from "./employee.interface";
 const employeeSchema = new Schema<IEmployee>(
   {
     name: { type: String, required: true },
+    slug: { type: String, unique: true, sparse: true, index: true },
     email: { type: String },
     phone: { type: String },
     address: { type: String },

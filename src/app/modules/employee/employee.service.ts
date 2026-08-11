@@ -6,6 +6,7 @@ import { Employee } from "./employee.model";
 import { IEmployee } from "./employee.interface";
 import { employeeSearchableFields } from "./employee.constant";
 import { deleteImageFromCLoudinary } from "../../config/cloudinary.config";
+import { generateUniqueSlug } from "../../utils/slugify";
 
 const createEmployee = async (payload: IEmployee) => {
   const existingEmployee = await Employee.findOne({ email: payload.email });
@@ -14,7 +15,9 @@ const createEmployee = async (payload: IEmployee) => {
     throw new AppError(httpStatus.CONFLICT, "Employee with this email already exists");
   }
 
-  const employee = await Employee.create(payload);
+  const slug = await generateUniqueSlug(payload.name, async (candidate) => Boolean(await Employee.exists({ slug: candidate })));
+
+  const employee = await Employee.create({ ...payload, slug });
   return employee;
 };
 
@@ -26,6 +29,7 @@ const updateEmployee = async (id: string, payload: Partial<IEmployee>) => {
   }
 
   const duplicateEmployee = await Employee.findOne({
+    _id: { $ne: id },
     email: payload.email,
   });
 
@@ -33,7 +37,17 @@ const updateEmployee = async (id: string, payload: Partial<IEmployee>) => {
     throw new Error("An Employee with this email already exists.");
   }
 
-  const updatedEmployee = await Employee.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+  // Slugs are kept stable once set (changing them would break already
+  // shared/indexed links) — only generate one here for legacy records
+  // that predate this feature and still don't have one.
+  const nextPayload = { ...payload };
+  if (!existingEmployee.slug) {
+    nextPayload.slug = await generateUniqueSlug(payload.name || existingEmployee.name, async (candidate) =>
+      Boolean(await Employee.exists({ slug: candidate, _id: { $ne: id } })),
+    );
+  }
+
+  const updatedEmployee = await Employee.findByIdAndUpdate(id, nextPayload, { new: true, runValidators: true });
 
   if (payload.picture && existingEmployee.picture) {
     await deleteImageFromCLoudinary(existingEmployee.picture);
@@ -55,8 +69,14 @@ const getAllEmployees = async (query: Record<string, string>) => {
   };
 };
 
+// mongoose.Types.ObjectId.isValid() also accepts any 12-character string
+// (a raw 12-byte buffer is technically valid too), which would wrongly
+// treat a short slug as an id. Match the actual 24-char hex format only.
+const isObjectIdString = (value: string) => /^[0-9a-fA-F]{24}$/.test(value);
+
 const getSingleEmployee = async (id: string) => {
-  const employee = await Employee.findById(id);
+  const employee = isObjectIdString(id) ? await Employee.findById(id) : await Employee.findOne({ slug: id });
+
   return {
     data: employee,
   };

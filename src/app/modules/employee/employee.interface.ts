@@ -1,5 +1,6 @@
 export interface IEmployee {
   name: string;
+  slug?: string;
   email?: string;
   phone?: string;
   address?: string;

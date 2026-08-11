@@ -10,6 +10,7 @@ import { BookingRoutes } from "../modules/booking/booking.route";
 import { PaymentRoutes } from "../modules/payment/payment.route";
 import { ProductRoutes } from "../modules/product/product.route";
 import { NewsRoutes } from "../modules/news/news.route";
+import { SiteSettingsRoutes } from "../modules/siteSettings/siteSettings.route";
 
 export const router = Router();
 
@@ -61,6 +62,10 @@ const moduleRoutes = [
   {
     path: "/payment",
     route: PaymentRoutes,
+  },
+  {
+    path: "/site-settings",
+    route: SiteSettingsRoutes,
   },
 ];
 
