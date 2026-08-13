@@ -8,7 +8,11 @@ import { envVars } from "./app/config/env";
 
 const app = express();
 
-const allowedOrigins = ["http://localhost:3000", envVars.FRONTEND_URL].filter(Boolean);
+const allowedOrigins = [
+  "http://localhost:3000",
+  envVars.FRONTEND_URL,
+  ...(envVars.EXTRA_ALLOWED_ORIGINS?.split(",").map((origin) => origin.trim()) ?? []),
+].filter(Boolean);
 
 app.use(
   cors({

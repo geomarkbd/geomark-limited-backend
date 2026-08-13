@@ -14,6 +14,9 @@ interface EnvConfig {
   SUPER_ADMIN_EMAIL: string;
   SUPER_ADMIN_PASSWORD: string;
   FRONTEND_URL: string;
+  /** Comma-separated extra origins allowed by CORS (e.g. a Vercel preview
+   * URL or a www subdomain) on top of FRONTEND_URL. Optional. */
+  EXTRA_ALLOWED_ORIGINS?: string;
   SSL: {
     STORE_ID: string;
     STORE_PASS: string;
@@ -102,6 +105,7 @@ const loadEnvVariables = (): EnvConfig => {
     SUPER_ADMIN_EMAIL: process.env.SUPER_ADMIN_EMAIL as string,
     SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD as string,
     FRONTEND_URL: process.env.FRONTEND_URL as string,
+    EXTRA_ALLOWED_ORIGINS: process.env.EXTRA_ALLOWED_ORIGINS,
     // ssl
     SSL: {
       STORE_ID: process.env.SSL_STORE_ID as string,
