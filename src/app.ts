@@ -5,6 +5,7 @@ import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
 import notFound from "./app/middlewares/notFound";
 import { router } from "./app/routes";
 import { envVars } from "./app/config/env";
+import { SitemapController } from "./app/modules/sitemap/sitemap.controller";
 
 const app = express();
 
@@ -38,6 +39,11 @@ app.use(express.urlencoded({ extended: true }));
 app.set("trust proxy", 1);
 
 app.use("/api/v1", router);
+
+// Proxied through the frontend's own domain via a Vercel rewrite (a
+// sitemap must live on the same domain as the URLs it lists) — see
+// sitemap.controller.ts for why this lives outside /api/v1.
+app.get("/sitemap.xml", SitemapController.getSitemap);
 
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json({
