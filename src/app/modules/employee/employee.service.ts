@@ -9,10 +9,14 @@ import { deleteImageFromCLoudinary } from "../../config/cloudinary.config";
 import { generateUniqueSlug } from "../../utils/slugify";
 
 const createEmployee = async (payload: IEmployee) => {
-  const existingEmployee = await Employee.findOne({ email: payload.email });
+  // Email is optional — an empty value shouldn't be treated as a
+  // duplicate of every other employee who also has no email on file.
+  if (payload.email) {
+    const existingEmployee = await Employee.findOne({ email: payload.email });
 
-  if (existingEmployee) {
-    throw new AppError(httpStatus.CONFLICT, "Employee with this email already exists");
+    if (existingEmployee) {
+      throw new AppError(httpStatus.CONFLICT, "Employee with this email already exists");
+    }
   }
 
   const slug = await generateUniqueSlug(payload.name, async (candidate) => Boolean(await Employee.exists({ slug: candidate })));
@@ -28,13 +32,15 @@ const updateEmployee = async (id: string, payload: Partial<IEmployee>) => {
     throw new Error("Employee not found.");
   }
 
-  const duplicateEmployee = await Employee.findOne({
-    _id: { $ne: id },
-    email: payload.email,
-  });
+  if (payload.email) {
+    const duplicateEmployee = await Employee.findOne({
+      _id: { $ne: id },
+      email: payload.email,
+    });
 
-  if (duplicateEmployee) {
-    throw new Error("An Employee with this email already exists.");
+    if (duplicateEmployee) {
+      throw new Error("An Employee with this email already exists.");
+    }
   }
 
   // Slugs are kept stable once set (changing them would break already

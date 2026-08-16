@@ -14,9 +14,15 @@ export const handlerZodError = (err: any): TGenericErrorResponse => {
     });
   });
 
+  // Surface the actual field + reason instead of a bare "Zod Error" —
+  // that generic message was indistinguishable from any other
+  // validation failure and gave the person filling out the form (or
+  // whoever they asked to debug it) nothing to go on.
+  const summary = errorSources.map((source) => `${source.path}: ${source.message}`).join(", ");
+
   return {
     statusCode: 400,
-    message: "Zod Error",
+    message: summary || "Validation error",
     errorSources,
   };
 };
