@@ -10,15 +10,29 @@ const positionSchema = new Schema(
   { _id: false },
 );
 
+const textStyleSchema = new Schema(
+  {
+    bold: { type: Boolean },
+    italic: { type: Boolean },
+    underline: { type: Boolean },
+    align: { type: String, enum: ["left", "center", "right", "justify"] },
+  },
+  { _id: false },
+);
+
 const certificateSchema = new Schema<ICertificate>(
   {
     slug: { type: String, required: true, unique: true, index: true },
     title: { type: String, required: true, trim: true },
     bodyText: { type: String, required: true },
+    titleStyle: { type: textStyleSchema },
+    bodyStyle: { type: textStyleSchema },
     signatureImage: { type: String },
     signatureName: { type: String, trim: true },
     sealImage: { type: String },
     positions: {
+      title: { type: positionSchema },
+      body: { type: positionSchema },
       signature: { type: positionSchema },
       seal: { type: positionSchema },
       qr: { type: positionSchema },

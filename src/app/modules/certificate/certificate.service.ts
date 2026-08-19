@@ -46,6 +46,8 @@ const createCertificate = async (payload: CreateCertificatePayload) => {
     slug,
     title: payload.title,
     bodyText: payload.bodyText,
+    titleStyle: payload.titleStyle,
+    bodyStyle: payload.bodyStyle,
     signatureImage: payload.signatureImage,
     signatureName: payload.signatureName,
     sealImage: payload.sealImage,

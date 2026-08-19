@@ -1,7 +1,7 @@
 import PDFDocument from "pdfkit";
 import axios from "axios";
 import QRCode from "qrcode";
-import { ICertificate } from "./certificate.interface";
+import { ICertificate, ICertificateTextStyle } from "./certificate.interface";
 import { GEOMARK_LETTERHEAD_BASE64 } from "./certificate.letterhead";
 
 const BRAND_BLUE = "#1B245F";
@@ -39,7 +39,21 @@ const fetchImageBuffer = async (url?: string): Promise<Buffer | null> => {
   }
 };
 
+// Helvetica has four built-in weight/style combinations — no need to embed
+// a font file for bold/italic, pdfkit ships these.
+const pickFont = (style?: ICertificateTextStyle) => {
+  if (style?.bold && style?.italic) return "Helvetica-BoldOblique";
+  if (style?.bold) return "Helvetica-Bold";
+  if (style?.italic) return "Helvetica-Oblique";
+  return "Helvetica";
+};
+
+const DEFAULT_TITLE_STYLE: Required<ICertificateTextStyle> = { bold: true, italic: false, underline: false, align: "center" };
+const DEFAULT_BODY_STYLE: Required<ICertificateTextStyle> = { bold: false, italic: false, underline: false, align: "center" };
+
 const DEFAULT_POSITIONS = {
+  title: { x: 8, y: 20, width: 84 },
+  body: { x: 13, y: 29, width: 74 },
   signature: { x: 10, y: 76, width: 22 },
   seal: { x: 34, y: 72, width: 16 },
   qr: { x: 78, y: 72, width: 15 },
@@ -65,9 +79,28 @@ export const generateCertificatePdf = async ({ certificate, verificationUrl }: G
   ]);
 
   const positions = {
+    title: certificate.positions?.title ?? DEFAULT_POSITIONS.title,
+    body: certificate.positions?.body ?? DEFAULT_POSITIONS.body,
     signature: certificate.positions?.signature ?? DEFAULT_POSITIONS.signature,
     seal: certificate.positions?.seal ?? DEFAULT_POSITIONS.seal,
     qr: certificate.positions?.qr ?? DEFAULT_POSITIONS.qr,
+  };
+  // Explicit field-by-field merge rather than a spread: certificate is a live
+  // Mongoose document, and spreading its (single embedded subdocument)
+  // titleStyle/bodyStyle can silently yield an empty object since those
+  // fields aren't own-enumerable on the subdocument instance — property
+  // access (via the schema-defined getters) always works, enumeration doesn't.
+  const titleStyle: Required<ICertificateTextStyle> = {
+    bold: certificate.titleStyle?.bold ?? DEFAULT_TITLE_STYLE.bold,
+    italic: certificate.titleStyle?.italic ?? DEFAULT_TITLE_STYLE.italic,
+    underline: certificate.titleStyle?.underline ?? DEFAULT_TITLE_STYLE.underline,
+    align: certificate.titleStyle?.align ?? DEFAULT_TITLE_STYLE.align,
+  };
+  const bodyStyle: Required<ICertificateTextStyle> = {
+    bold: certificate.bodyStyle?.bold ?? DEFAULT_BODY_STYLE.bold,
+    italic: certificate.bodyStyle?.italic ?? DEFAULT_BODY_STYLE.italic,
+    underline: certificate.bodyStyle?.underline ?? DEFAULT_BODY_STYLE.underline,
+    align: certificate.bodyStyle?.align ?? DEFAULT_BODY_STYLE.align,
   };
 
   return new Promise((resolve, reject) => {
@@ -88,18 +121,23 @@ export const generateCertificatePdf = async ({ certificate, verificationUrl }: G
       // Title.
       doc
         .fillColor(BRAND_BLUE)
-        .font("Helvetica-Bold")
+        .font(pickFont(titleStyle))
         .fontSize(26)
-        .text(certificate.title, 46, 170, { width: pageWidth - 92, align: "center" });
+        .text(certificate.title, pct(positions.title.x, pageWidth), pct(positions.title.y, pageHeight), {
+          width: pct(positions.title.width, pageWidth),
+          align: titleStyle.align,
+          underline: titleStyle.underline,
+        });
 
       // Body text.
       doc
         .fillColor(TEXT_DARK)
-        .font("Helvetica")
+        .font(pickFont(bodyStyle))
         .fontSize(13)
-        .text(certificate.bodyText, 80, 250, {
-          width: pageWidth - 160,
-          align: "center",
+        .text(certificate.bodyText, pct(positions.body.x, pageWidth), pct(positions.body.y, pageHeight), {
+          width: pct(positions.body.width, pageWidth),
+          align: bodyStyle.align,
+          underline: bodyStyle.underline,
           lineGap: 6,
         });
 
