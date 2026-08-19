@@ -2,17 +2,18 @@ import PDFDocument from "pdfkit";
 import axios from "axios";
 import QRCode from "qrcode";
 import { ICertificate } from "./certificate.interface";
-import { GEOMARK_LOGO_BASE64 } from "./certificate.logo";
+import { GEOMARK_LETTERHEAD_BASE64 } from "./certificate.letterhead";
 
-const BRAND_ORANGE = "#F7941D";
 const BRAND_BLUE = "#1B245F";
 const TEXT_DARK = "#1F2937";
 
-// Embedded directly rather than fetched over the network: there is no stable,
-// unhashed public URL for this asset (the frontend build hashes its filename
-// on every deploy), so a hardcoded URL 404s straight into the SPA's
-// index.html fallback and silently produces a logo-less certificate.
-const logoBuffer = Buffer.from(GEOMARK_LOGO_BASE64, "base64");
+// The real company letterhead pad — logo, award badges, watermark, border
+// and address footer are all already part of this image, so it's drawn
+// full-bleed as the page background and everything else is overlaid on
+// top of it. Embedded as base64 rather than fetched over the network:
+// there's no stable, unhashed public URL for it (the frontend build
+// hashes asset filenames on every deploy).
+const letterheadBuffer = Buffer.from(GEOMARK_LETTERHEAD_BASE64, "base64");
 
 const generateQrBuffer = async (verificationUrl: string): Promise<Buffer> => {
   return QRCode.toBuffer(verificationUrl, {
@@ -50,11 +51,11 @@ type GenerateArgs = {
 };
 
 /**
- * Renders a certificate onto the Geomark letterhead: logo + orange accent
- * bar + blue footer (recreated to match the company pad), with the
- * title/body text plus a positioned signature, seal and QR code overlaid
- * on top. Positions are percentages of the page so admin-chosen layouts
- * (dragged in the admin UI) map 1:1 onto the generated PDF.
+ * Renders a certificate on top of the real Geomark letterhead pad (drawn
+ * full-bleed as the background), with the title/body text plus a
+ * positioned signature, seal and QR code overlaid on top. Positions are
+ * percentages of the page so admin-chosen layouts (dragged in the admin
+ * UI) map 1:1 onto the generated PDF.
  */
 export const generateCertificatePdf = async ({ certificate, verificationUrl }: GenerateArgs): Promise<Buffer> => {
   const [qrBuffer, signatureImageBuffer, sealImageBuffer] = await Promise.all([
@@ -81,24 +82,8 @@ export const generateCertificatePdf = async ({ certificate, verificationUrl }: G
       const pageHeight = doc.page.height;
       const pct = (value: number, of: number) => (value / 100) * of;
 
-      // Orange accent bar down the left edge, matching the letterhead.
-      doc.rect(0, 0, 14, pageHeight).fill(BRAND_ORANGE);
-
-      // Header: logo top-left.
-      try {
-        doc.image(logoBuffer, 46, 36, { width: 150 });
-      } catch {
-        // Corrupt/unsupported image data — skip rather than fail the whole certificate.
-        doc.fillColor(BRAND_BLUE).fontSize(20).font("Helvetica-Bold").text("GEOMARK LIMITED", 46, 40);
-      }
-
-      // Blue rule under the header.
-      doc
-        .moveTo(46, 108)
-        .lineTo(pageWidth - 46, 108)
-        .lineWidth(1.5)
-        .strokeColor(BRAND_BLUE)
-        .stroke();
+      // Letterhead pad, full-bleed background.
+      doc.image(letterheadBuffer, 0, 0, { width: pageWidth, height: pageHeight });
 
       // Title.
       doc
@@ -106,13 +91,6 @@ export const generateCertificatePdf = async ({ certificate, verificationUrl }: G
         .font("Helvetica-Bold")
         .fontSize(26)
         .text(certificate.title, 46, 170, { width: pageWidth - 92, align: "center" });
-
-      doc
-        .moveTo(pageWidth / 2 - 60, 210)
-        .lineTo(pageWidth / 2 + 60, 210)
-        .lineWidth(2)
-        .strokeColor(BRAND_ORANGE)
-        .stroke();
 
       // Body text.
       doc
@@ -180,28 +158,6 @@ export const generateCertificatePdf = async ({ certificate, verificationUrl }: G
         .font("Helvetica")
         .fontSize(7.5)
         .text("Scan to verify", qrX, qrY + qrWidth + 4, { width: qrWidth, align: "center" });
-
-      // Footer: address + phone, matching the letterhead.
-      const footerY = pageHeight - 70;
-      doc
-        .moveTo(46, footerY - 12)
-        .lineTo(pageWidth - 46, footerY - 12)
-        .lineWidth(0.75)
-        .strokeColor(BRAND_ORANGE)
-        .stroke();
-
-      doc
-        .fillColor(BRAND_BLUE)
-        .font("Helvetica")
-        .fontSize(9)
-        .text("House 33, Road 12, Pisciculture Housing Society, Mohammadpur, Dhaka, Bangladesh. E-mail: geomarkbd@gmail.com", 46, footerY, {
-          width: pageWidth - 92,
-          align: "center",
-        })
-        .text("Phone: 01943223060, www.geomark.com.bd", 46, footerY + 14, {
-          width: pageWidth - 92,
-          align: "center",
-        });
 
       doc.end();
     } catch (error) {
