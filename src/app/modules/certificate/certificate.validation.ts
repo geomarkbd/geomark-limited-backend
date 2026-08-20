@@ -11,6 +11,10 @@ const textStyleSchema = z.object({
   italic: z.boolean().optional(),
   underline: z.boolean().optional(),
   align: z.enum(["left", "center", "right", "justify"]).optional(),
+  fontFamily: z.enum(["times", "helvetica", "arial-narrow"]).optional(),
+  fontSize: z.number().min(6).max(96).optional(),
+  lineSpacing: z.number().min(0.5).max(4).optional(),
+  paragraphSpacing: z.number().min(0).max(60).optional(),
 });
 
 export const createCertificateZodSchema = z.object({

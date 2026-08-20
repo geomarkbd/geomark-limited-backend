@@ -16,6 +16,10 @@ const textStyleSchema = new Schema(
     italic: { type: Boolean },
     underline: { type: Boolean },
     align: { type: String, enum: ["left", "center", "right", "justify"] },
+    fontFamily: { type: String, enum: ["times", "helvetica", "arial-narrow"] },
+    fontSize: { type: Number },
+    lineSpacing: { type: Number },
+    paragraphSpacing: { type: Number },
   },
   { _id: false },
 );

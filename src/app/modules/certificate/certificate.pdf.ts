@@ -1,8 +1,9 @@
 import PDFDocument from "pdfkit";
 import axios from "axios";
 import QRCode from "qrcode";
-import { ICertificate, ICertificateTextStyle } from "./certificate.interface";
+import { CertificateFontFamily, ICertificate, ICertificateTextStyle } from "./certificate.interface";
 import { GEOMARK_LETTERHEAD_BASE64 } from "./certificate.letterhead";
+import { ARIAL_NARROW_BOLD_BASE64, ARIAL_NARROW_REGULAR_BASE64 } from "./certificate.fonts";
 
 const BRAND_BLUE = "#1B245F";
 const TEXT_DARK = "#1F2937";
@@ -14,6 +15,9 @@ const TEXT_DARK = "#1F2937";
 // there's no stable, unhashed public URL for it (the frontend build
 // hashes asset filenames on every deploy).
 const letterheadBuffer = Buffer.from(GEOMARK_LETTERHEAD_BASE64, "base64");
+
+const arialNarrowRegularBuffer = Buffer.from(ARIAL_NARROW_REGULAR_BASE64, "base64");
+const arialNarrowBoldBuffer = Buffer.from(ARIAL_NARROW_BOLD_BASE64, "base64");
 
 const generateQrBuffer = async (verificationUrl: string): Promise<Buffer> => {
   return QRCode.toBuffer(verificationUrl, {
@@ -39,17 +43,79 @@ const fetchImageBuffer = async (url?: string): Promise<Buffer | null> => {
   }
 };
 
-// Helvetica has four built-in weight/style combinations — no need to embed
-// a font file for bold/italic, pdfkit ships these.
-const pickFont = (style?: ICertificateTextStyle) => {
-  if (style?.bold && style?.italic) return "Helvetica-BoldOblique";
-  if (style?.bold) return "Helvetica-Bold";
-  if (style?.italic) return "Helvetica-Oblique";
-  return "Helvetica";
+// Registers the custom "Arial Narrow" substitute (see certificate.fonts.ts)
+// under names pickFont() can address. Font registration is per-document in
+// pdfkit, so this runs once at the top of every generateCertificatePdf call.
+// There's no italic face for this family — both italic slots point at the
+// same upright glyphs rather than being left unregistered (which would
+// throw when selected instead of just rendering non-slanted).
+const registerCustomFonts = (doc: PDFKit.PDFDocument) => {
+  doc.registerFont("ArialNarrow", arialNarrowRegularBuffer);
+  doc.registerFont("ArialNarrow-Bold", arialNarrowBoldBuffer);
+  doc.registerFont("ArialNarrow-Italic", arialNarrowRegularBuffer);
+  doc.registerFont("ArialNarrow-BoldItalic", arialNarrowBoldBuffer);
 };
 
-const DEFAULT_TITLE_STYLE: Required<ICertificateTextStyle> = { bold: true, italic: false, underline: false, align: "center" };
-const DEFAULT_BODY_STYLE: Required<ICertificateTextStyle> = { bold: false, italic: false, underline: false, align: "center" };
+const FONT_MAP: Record<CertificateFontFamily, { regular: string; bold: string; italic: string; boldItalic: string }> = {
+  times: { regular: "Times-Roman", bold: "Times-Bold", italic: "Times-Italic", boldItalic: "Times-BoldItalic" },
+  helvetica: { regular: "Helvetica", bold: "Helvetica-Bold", italic: "Helvetica-Oblique", boldItalic: "Helvetica-BoldOblique" },
+  "arial-narrow": { regular: "ArialNarrow", bold: "ArialNarrow-Bold", italic: "ArialNarrow-Italic", boldItalic: "ArialNarrow-BoldItalic" },
+};
+
+const pickFont = (style: ResolvedTextStyle) => {
+  const map = FONT_MAP[style.fontFamily] ?? FONT_MAP.times;
+  if (style.bold && style.italic) return map.boldItalic;
+  if (style.bold) return map.bold;
+  if (style.italic) return map.italic;
+  return map.regular;
+};
+
+type ResolvedTextStyle = Required<ICertificateTextStyle>;
+
+// Times New Roman is the new default (was Helvetica) — an exact, always-
+// available pdfkit built-in that reads as a formal/certificate typeface,
+// which is what was asked for. "Arial Narrow" is offered as an alternative
+// (see certificate.fonts.ts for the substitution note).
+const DEFAULT_TITLE_STYLE: ResolvedTextStyle = {
+  bold: true,
+  italic: false,
+  underline: false,
+  align: "center",
+  fontFamily: "times",
+  fontSize: 26,
+  lineSpacing: 1,
+  paragraphSpacing: 0,
+};
+const DEFAULT_BODY_STYLE: ResolvedTextStyle = {
+  bold: false,
+  italic: false,
+  underline: false,
+  align: "center",
+  fontFamily: "times",
+  fontSize: 13,
+  lineSpacing: 1.3,
+  paragraphSpacing: 0,
+};
+
+// Explicit field-by-field merge rather than a spread: certificate is a live
+// Mongoose document, and spreading its (single embedded subdocument)
+// titleStyle/bodyStyle can silently yield an empty object since those
+// fields aren't own-enumerable on the subdocument instance — property
+// access (via the schema-defined getters) always works, enumeration doesn't.
+const resolveStyle = (style: ICertificateTextStyle | undefined, defaults: ResolvedTextStyle): ResolvedTextStyle => ({
+  bold: style?.bold ?? defaults.bold,
+  italic: style?.italic ?? defaults.italic,
+  underline: style?.underline ?? defaults.underline,
+  align: style?.align ?? defaults.align,
+  fontFamily: style?.fontFamily ?? defaults.fontFamily,
+  fontSize: style?.fontSize ?? defaults.fontSize,
+  lineSpacing: style?.lineSpacing ?? defaults.lineSpacing,
+  paragraphSpacing: style?.paragraphSpacing ?? defaults.paragraphSpacing,
+});
+
+// pdfkit's lineGap is an absolute point value, not the "1x / 1.5x / 2x"
+// multiplier admins actually think in — convert once here.
+const lineGapFor = (style: ResolvedTextStyle) => style.fontSize * (style.lineSpacing - 1);
 
 const DEFAULT_POSITIONS = {
   title: { x: 8, y: 20, width: 84 },
@@ -58,6 +124,9 @@ const DEFAULT_POSITIONS = {
   seal: { x: 34, y: 72, width: 16 },
   qr: { x: 78, y: 72, width: 15 },
 };
+
+/** Minimum gap, in pt, kept between the bottom of the title and the top of the body. */
+const TITLE_BODY_MIN_GAP = 14;
 
 type GenerateArgs = {
   certificate: ICertificate;
@@ -85,23 +154,8 @@ export const generateCertificatePdf = async ({ certificate, verificationUrl }: G
     seal: certificate.positions?.seal ?? DEFAULT_POSITIONS.seal,
     qr: certificate.positions?.qr ?? DEFAULT_POSITIONS.qr,
   };
-  // Explicit field-by-field merge rather than a spread: certificate is a live
-  // Mongoose document, and spreading its (single embedded subdocument)
-  // titleStyle/bodyStyle can silently yield an empty object since those
-  // fields aren't own-enumerable on the subdocument instance — property
-  // access (via the schema-defined getters) always works, enumeration doesn't.
-  const titleStyle: Required<ICertificateTextStyle> = {
-    bold: certificate.titleStyle?.bold ?? DEFAULT_TITLE_STYLE.bold,
-    italic: certificate.titleStyle?.italic ?? DEFAULT_TITLE_STYLE.italic,
-    underline: certificate.titleStyle?.underline ?? DEFAULT_TITLE_STYLE.underline,
-    align: certificate.titleStyle?.align ?? DEFAULT_TITLE_STYLE.align,
-  };
-  const bodyStyle: Required<ICertificateTextStyle> = {
-    bold: certificate.bodyStyle?.bold ?? DEFAULT_BODY_STYLE.bold,
-    italic: certificate.bodyStyle?.italic ?? DEFAULT_BODY_STYLE.italic,
-    underline: certificate.bodyStyle?.underline ?? DEFAULT_BODY_STYLE.underline,
-    align: certificate.bodyStyle?.align ?? DEFAULT_BODY_STYLE.align,
-  };
+  const titleStyle = resolveStyle(certificate.titleStyle, DEFAULT_TITLE_STYLE);
+  const bodyStyle = resolveStyle(certificate.bodyStyle, DEFAULT_BODY_STYLE);
 
   return new Promise((resolve, reject) => {
     try {
@@ -111,6 +165,8 @@ export const generateCertificatePdf = async ({ certificate, verificationUrl }: G
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
+      registerCustomFonts(doc);
+
       const pageWidth = doc.page.width;
       const pageHeight = doc.page.height;
       const pct = (value: number, of: number) => (value / 100) * of;
@@ -119,26 +175,47 @@ export const generateCertificatePdf = async ({ certificate, verificationUrl }: G
       doc.image(letterheadBuffer, 0, 0, { width: pageWidth, height: pageHeight });
 
       // Title.
+      const titleFont = pickFont(titleStyle);
+      const titleX = pct(positions.title.x, pageWidth);
+      const titleY = pct(positions.title.y, pageHeight);
+      const titleWidth = pct(positions.title.width, pageWidth);
+      doc.font(titleFont).fontSize(titleStyle.fontSize);
+      // Measured before drawing so the body can be pushed clear of it below —
+      // a title that wraps onto more lines than the fixed default gap
+      // assumes (a long title, or a larger font size) would otherwise print
+      // directly on top of the body text.
+      const titleHeight = doc.heightOfString(certificate.title, {
+        width: titleWidth,
+        align: titleStyle.align,
+        lineGap: lineGapFor(titleStyle),
+      });
       doc
         .fillColor(BRAND_BLUE)
-        .font(pickFont(titleStyle))
-        .fontSize(26)
-        .text(certificate.title, pct(positions.title.x, pageWidth), pct(positions.title.y, pageHeight), {
-          width: pct(positions.title.width, pageWidth),
+        .text(certificate.title, titleX, titleY, {
+          width: titleWidth,
           align: titleStyle.align,
           underline: titleStyle.underline,
+          lineGap: lineGapFor(titleStyle),
+          paragraphGap: titleStyle.paragraphSpacing,
         });
 
-      // Body text.
+      // Body text — starts wherever the admin positioned it, unless the
+      // title (once actually measured above) would run into it, in which
+      // case it's pushed down just far enough to clear it.
+      const bodyFont = pickFont(bodyStyle);
+      const bodyX = pct(positions.body.x, pageWidth);
+      const configuredBodyY = pct(positions.body.y, pageHeight);
+      const bodyY = Math.max(configuredBodyY, titleY + titleHeight + TITLE_BODY_MIN_GAP);
       doc
         .fillColor(TEXT_DARK)
-        .font(pickFont(bodyStyle))
-        .fontSize(13)
-        .text(certificate.bodyText, pct(positions.body.x, pageWidth), pct(positions.body.y, pageHeight), {
+        .font(bodyFont)
+        .fontSize(bodyStyle.fontSize)
+        .text(certificate.bodyText, bodyX, bodyY, {
           width: pct(positions.body.width, pageWidth),
           align: bodyStyle.align,
           underline: bodyStyle.underline,
-          lineGap: 6,
+          lineGap: lineGapFor(bodyStyle),
+          paragraphGap: bodyStyle.paragraphSpacing,
         });
 
       // Issue date, bottom-left area (above the signature row).
@@ -149,7 +226,7 @@ export const generateCertificatePdf = async ({ certificate, verificationUrl }: G
       });
       doc
         .fillColor(TEXT_DARK)
-        .font("Helvetica")
+        .font("Times-Roman")
         .fontSize(10)
         .text(`Issued: ${issueDateText}`, 46, pct(positions.signature.y, pageHeight) - 18, { width: 220 });
 
@@ -168,7 +245,7 @@ export const generateCertificatePdf = async ({ certificate, verificationUrl }: G
       if (certificate.signatureName) {
         doc
           .fillColor(TEXT_DARK)
-          .font("Helvetica-Bold")
+          .font("Times-Bold")
           .fontSize(10)
           .text(certificate.signatureName, pct(positions.signature.x, pageWidth), pct(positions.signature.y, pageHeight) + sigWidth * 0.42 + 6, {
             width: sigWidth + 40,
@@ -193,7 +270,7 @@ export const generateCertificatePdf = async ({ certificate, verificationUrl }: G
       doc.image(qrBuffer, qrX, qrY, { width: qrWidth });
       doc
         .fillColor(TEXT_DARK)
-        .font("Helvetica")
+        .font("Times-Roman")
         .fontSize(7.5)
         .text("Scan to verify", qrX, qrY + qrWidth + 4, { width: qrWidth, align: "center" });
 
