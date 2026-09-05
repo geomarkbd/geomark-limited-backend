@@ -40,8 +40,10 @@ const scannedDocumentSchema = new Schema(
 const certificateSchema = new Schema<ICertificate>(
   {
     slug: { type: String, required: true, unique: true, index: true },
-    title: { type: String, required: true, trim: true },
-    bodyText: { type: String, required: true },
+    // Not required: a certificate designed entirely in Word around the
+    // downloaded QR code can be created with both left blank.
+    title: { type: String, default: "", trim: true },
+    bodyText: { type: String, default: "" },
     titleStyle: { type: textStyleSchema },
     bodyStyle: { type: textStyleSchema },
     signatureImage: { type: String },

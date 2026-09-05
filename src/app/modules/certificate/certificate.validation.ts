@@ -18,8 +18,11 @@ const textStyleSchema = z.object({
 });
 
 export const createCertificateZodSchema = z.object({
-  title: z.string().trim().min(1, "Title is required"),
-  bodyText: z.string().trim().min(1, "Body text is required"),
+  // Both may be left blank — the certificate is sometimes designed entirely
+  // in Word around just the downloaded QR code, with this system only
+  // generating the QR/verification link.
+  title: z.string().trim().optional().default(""),
+  bodyText: z.string().trim().optional().default(""),
   titleStyle: textStyleSchema.optional(),
   bodyStyle: textStyleSchema.optional(),
   signatureName: z.string().trim().optional(),
