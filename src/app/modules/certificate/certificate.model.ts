@@ -24,6 +24,19 @@ const textStyleSchema = new Schema(
   { _id: false },
 );
 
+// `data` is select: false — normal fetches (list, verify) get to know a
+// scanned copy exists (contentType/fileName/uploadedAt) without dragging
+// its bytes along; only the dedicated download route explicitly selects it.
+const scannedDocumentSchema = new Schema(
+  {
+    data: { type: Buffer, required: true, select: false },
+    contentType: { type: String, required: true },
+    fileName: { type: String },
+    uploadedAt: { type: Date, default: Date.now },
+  },
+  { _id: false },
+);
+
 const certificateSchema = new Schema<ICertificate>(
   {
     slug: { type: String, required: true, unique: true, index: true },
@@ -44,6 +57,7 @@ const certificateSchema = new Schema<ICertificate>(
     issueDate: { type: Date, required: true, default: Date.now },
     status: { type: String, enum: Object.values(CertificateStatus), default: CertificateStatus.ACTIVE },
     qrCodeImage: { type: String },
+    scannedDocument: { type: scannedDocumentSchema },
   },
   {
     timestamps: true,

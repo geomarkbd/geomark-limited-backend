@@ -41,6 +41,21 @@ export interface ICertificatePositions {
   qr?: ICertificatePosition;
 }
 
+/**
+ * A physically signed-and-sealed copy (built in Word from the downloaded QR
+ * code, then scanned) that replaces the auto-generated certificate as the
+ * thing people see when they scan the QR. Stored inline like the QR code —
+ * `data` is excluded from normal queries (see certificate.model.ts) so
+ * fetching a certificate or the certificate list doesn't drag its bytes
+ * along; only the dedicated download route selects it.
+ */
+export interface ICertificateScannedDocument {
+  data: Buffer;
+  contentType: string;
+  fileName?: string;
+  uploadedAt: Date;
+}
+
 export interface ICertificate {
   slug: string;
   title: string;
@@ -55,4 +70,5 @@ export interface ICertificate {
   status: CertificateStatus;
   /** Data URL — small enough to store inline, no separate file needed. */
   qrCodeImage?: string;
+  scannedDocument?: ICertificateScannedDocument;
 }

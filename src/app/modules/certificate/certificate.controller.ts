@@ -94,6 +94,48 @@ const downloadCertificatePdf = catchAsync(async (req: Request, res: Response) =>
   res.status(httpStatus.OK).send(buffer);
 });
 
+const ALLOWED_SCANNED_DOCUMENT_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+
+const uploadScannedDocument = catchAsync(async (req: Request, res: Response) => {
+  if (!req.file) {
+    throw new AppError(httpStatus.BAD_REQUEST, "No file uploaded");
+  }
+  if (!ALLOWED_SCANNED_DOCUMENT_TYPES.includes(req.file.mimetype)) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Only PDF, JPG, PNG or WEBP files are allowed");
+  }
+
+  const certificate = await CertificateService.uploadScannedDocument(req.params.slug as string, req.file);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Scanned copy uploaded successfully",
+    data: certificate,
+  });
+});
+
+const deleteScannedDocument = catchAsync(async (req: Request, res: Response) => {
+  const certificate = await CertificateService.deleteScannedDocument(req.params.slug as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Scanned copy removed successfully",
+    data: certificate,
+  });
+});
+
+const downloadScannedDocument = catchAsync(async (req: Request, res: Response) => {
+  const doc = await CertificateService.getScannedDocument(req.params.slug as string);
+
+  res.set({
+    "Content-Type": doc.contentType,
+    "Content-Disposition": `inline; filename="${doc.fileName || `${req.params.slug}-certificate`}"`,
+    "Content-Length": doc.data.length,
+  });
+  res.status(httpStatus.OK).send(doc.data);
+});
+
 export const CertificateController = {
   createCertificate,
   getAllCertificates,
@@ -101,4 +143,7 @@ export const CertificateController = {
   updateCertificate,
   deleteCertificate,
   downloadCertificatePdf,
+  uploadScannedDocument,
+  deleteScannedDocument,
+  downloadScannedDocument,
 };

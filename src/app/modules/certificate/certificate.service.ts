@@ -103,6 +103,49 @@ const getCertificatePdfBuffer = async (slug: string) => {
   return { buffer, certificate };
 };
 
+/**
+ * Stores a physically signed-and-sealed copy (built in Word from the
+ * downloaded QR code, then scanned) directly on the document, the same way
+ * the QR code itself is stored — see the note in createCertificate on why
+ * this isn't a Cloudinary URL: Cloudinary's public delivery of PDF/ZIP
+ * resources is restricted on this account, so anything that might be a PDF
+ * is served through our own route instead, never a Cloudinary link.
+ */
+const uploadScannedDocument = async (slug: string, file: Express.Multer.File) => {
+  const certificate = await Certificate.findOneAndUpdate(
+    { slug },
+    {
+      scannedDocument: {
+        data: file.buffer,
+        contentType: file.mimetype,
+        fileName: file.originalname,
+        uploadedAt: new Date(),
+      },
+    },
+    { new: true },
+  );
+  if (!certificate) {
+    throw new AppError(httpStatus.NOT_FOUND, "Certificate not found");
+  }
+  return certificate;
+};
+
+const deleteScannedDocument = async (slug: string) => {
+  const certificate = await Certificate.findOneAndUpdate({ slug }, { $unset: { scannedDocument: 1 } }, { new: true });
+  if (!certificate) {
+    throw new AppError(httpStatus.NOT_FOUND, "Certificate not found");
+  }
+  return certificate;
+};
+
+const getScannedDocument = async (slug: string) => {
+  const certificate = await Certificate.findOne({ slug }).select("+scannedDocument.data");
+  if (!certificate?.scannedDocument?.data) {
+    throw new AppError(httpStatus.NOT_FOUND, "No scanned copy has been uploaded for this certificate yet");
+  }
+  return certificate.scannedDocument;
+};
+
 export const CertificateService = {
   createCertificate,
   getAllCertificates,
@@ -110,4 +153,7 @@ export const CertificateService = {
   updateCertificate,
   deleteCertificate,
   getCertificatePdfBuffer,
+  uploadScannedDocument,
+  deleteScannedDocument,
+  getScannedDocument,
 };
